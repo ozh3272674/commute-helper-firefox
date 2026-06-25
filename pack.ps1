@@ -1,7 +1,15 @@
 ﻿Add-Type -AssemblyName System.IO.Compression.FileSystem
+
 $root = $PSScriptRoot
-$out  = Join-Path $root "commute-helper-firefox-v2.5.0.zip"
+$manifest = Get-Content (Join-Path $root "manifest.json") -Raw | ConvertFrom-Json
+$version = $manifest.version
+$outDir = "D:\文档\VSCODE\上传文件\firefox"
+$outFile = "commute-helper-firefox-v$version.zip"
+$out = Join-Path $outDir $outFile
+
+if (-not (Test-Path $outDir)) { New-Item -ItemType Directory -Path $outDir -Force | Out-Null }
 Remove-Item $out -Force -ErrorAction SilentlyContinue
+
 $zip = [System.IO.Compression.ZipFile]::Open($out, [System.IO.Compression.ZipArchiveMode]::Create)
 $entries = @(
     "manifest.json",
@@ -19,6 +27,7 @@ $entries = @(
     "LICENSE",
     "README.md"
 )
+
 foreach ($e in $entries) {
     $src = Join-Path $root $e
     if (Test-Path $src) {
@@ -28,5 +37,6 @@ foreach ($e in $entries) {
         Write-Host "MISS $e"
     }
 }
+
 $zip.Dispose()
-Write-Host "DONE"
+Write-Host "DONE -> $out"
