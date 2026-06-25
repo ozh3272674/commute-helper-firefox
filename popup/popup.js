@@ -747,7 +747,10 @@ exportBtn.addEventListener('click', async () => {
   try { await exportData(); } catch (e) { alert('导出失败: ' + e.message); }
 });
 
-importBtn.addEventListener('click', () => importFile.click());
+importBtn.addEventListener('click', () => {
+  importFile.value = '';
+  importFile.click();
+});
 
 // v2.4: 导入合并
 importFile.addEventListener('change', async (e) => {
@@ -756,10 +759,10 @@ importFile.addEventListener('change', async (e) => {
   try {
     const text = await file.text();
     const data = JSON.parse(text);
-    const result = await importData(text, true); // mergeMode
-    let msg = `✅ 导入成功！`;
+    const result = await importData(text, true);
+    let msg = `✅ 导入成功！共 ${result.groupCount} 个地点组`;
     if (result.needsKeyConfirm && data.apiKey) {
-      const replace = confirm('导入文件中包含不同的 API Key，是否替换？\n\n「确定」替换，「取消」保留当前 Key');
+      const replace = confirm(`导入文件中包含不同的 API Key，是否替换？\n\n「确定」替换，「取消」保留当前 Key`);
       if (replace) await confirmImportKey(data.apiKey);
     }
     alert(msg);
@@ -767,8 +770,9 @@ importFile.addEventListener('change', async (e) => {
     browser.runtime.sendMessage({ action: 'updateSchedule' });
   } catch (err) {
     alert('❌ 导入失败: ' + err.message);
+  } finally {
+    e.target.value = '';
   }
-  importFile.value = '';
 });
 
 // ==================== API Key 设置弹窗 ====================
