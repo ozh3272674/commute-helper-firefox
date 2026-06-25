@@ -13,7 +13,7 @@ import {
   addHistoryRecord, getHistoryRecords, getHistoryInRange,
   getHistoryLimit, setHistoryLimit,
 } from '../lib/storage.js';
-import { getCommuteTime, testApiKey, getWeatherInfo, getWeatherIcon, geocode, MODE_LABELS, TRAFFIC_LABELS, TRAFFIC_ICONS } from '../lib/amap.js';
+import { getCommuteTime, testApiKey, getWeatherInfo, getWeatherIcon, geocode, getStaticMapUrl, MODE_LABELS, TRAFFIC_LABELS, TRAFFIC_ICONS } from '../lib/amap.js';
 import { getDateInfo } from '../lib/calendar.js';
 
 // ==================== DOM 引用 ====================
@@ -518,7 +518,7 @@ async function handleQuery(id, btn) {
       summary: result.summary || '',
     });
     await loadGroups();
-    showResultModal(group, result);
+    await showResultModal(group, result);
   } catch (e) {
     alert('查询失败: ' + e.message);
   } finally {
@@ -695,7 +695,7 @@ closeScheduleBtn.addEventListener('click', () => scheduleModal.classList.add('hi
 scheduleModal.querySelector('.modal-overlay').addEventListener('click', () => scheduleModal.classList.add('hidden'));
 
 // ==================== 结果弹窗 ====================
-function showResultModal(group, result) {
+async function showResultModal(group, result) {
   let html = `<p style="margin-bottom:6px;color:#757575;font-size:12px;">
     <strong>${escHtml(group.name)}</strong>：
     ${escHtml(group.origin)} → ${escHtml(group.destination)}</p>`;
@@ -711,12 +711,29 @@ function showResultModal(group, result) {
   if (result.distance) html += `<div>📏 距离：${result.distance}公里</div>`;
   if (result.summary) html += `<div>🚌 方案：${result.summary}</div>`;
   if (result.traffic_lights) html += `<div>🚦 红绿灯：${result.traffic_lights}个</div>`;
-  // v2.1: 路况状态
   if (result.trafficStatus && result.trafficStatus.level >= 1) {
     const icon = TRAFFIC_ICONS[result.trafficStatus.level] || '';
     html += `<div>🚗 路况：<span class="traffic-label traffic-${result.trafficStatus.level}">${icon} ${result.trafficStatus.label}</span></div>`;
   }
   html += `</div>`;
+
+  // v2.5: 路线图（使用用户 API Key）
+  const apiKey = await getApiKey();
+  const mapUrl = apiKey ? getStaticMapUrl(result, apiKey) : '';
+  if (mapUrl) {
+    html += `<div class="result-map-container">
+      <img class="result-map" src="${mapUrl}" alt="路线图" onerror="this.style.display='none';this.nextElementSibling.style.display='block';">
+      <div class="result-map-fallback" style="display:none;text-align:center;padding:12px;color:#aeaeb2;">⚠️ 路线图加载失败</div>
+    </div>`;
+  }
+
+  // 在新标签页查看路线
+  const o = result.originCoord;
+  const d = result.destCoord;
+  if (o && d) {
+    const navUrl = `https://uri.amap.com/navigation?from=${o.lng},${o.lat},${encodeURIComponent(result.origin)}&to=${d.lng},${d.lat},${encodeURIComponent(result.destination)}&mode=${result.mode}`;
+    html += `<a class="result-nav-link" href="${navUrl}" target="_blank">🗺️ 在新标签页查看完整路线 →</a>`;
+  }
 
   resultBody.innerHTML = html;
   resultModal.classList.remove('hidden');
