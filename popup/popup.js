@@ -829,6 +829,14 @@ saveShiftTimesBtn.addEventListener('click', async () => {
   }, 1500);
 });
 
+// v2.5: 反馈按钮 → 跳转 GitHub Issues
+const feedbackBtn = $('#feedbackBtn');
+if (feedbackBtn) {
+  feedbackBtn.addEventListener('click', () => {
+    browser.tabs.create({ url: 'https://github.com/ozh3272674/commute-helper-firefox/issues' });
+  });
+}
+
 // ==================== v2.4 历史记录弹窗 ====================
 
 async function openHistoryModal(groupId) {
