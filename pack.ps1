@@ -20,8 +20,6 @@ $entries = @(
     "lib/amap.js",
     "lib/storage.js",
     "lib/calendar.js",
-    "lib/leaflet.css",
-    "lib/leaflet.js",
     "icons/icon-16.svg", "icons/icon-32.svg", "icons/icon-48.svg", "icons/icon-96.svg",
     "icons/rain-16.svg", "icons/rain-32.svg", "icons/rain-48.svg", "icons/rain-96.svg",
     "icons/snow-16.svg", "icons/snow-32.svg", "icons/snow-48.svg", "icons/snow-96.svg",

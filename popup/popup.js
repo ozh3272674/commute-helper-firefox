@@ -13,7 +13,7 @@ import {
   addHistoryRecord, getHistoryRecords, getHistoryInRange,
   getHistoryLimit, setHistoryLimit,
 } from '../lib/storage.js';
-import { getCommuteTime, testApiKey, getWeatherInfo, getWeatherIcon, geocode, getStaticMapUrl, decodePolyline, MODE_LABELS, TRAFFIC_LABELS, TRAFFIC_ICONS } from '../lib/amap.js';
+import { getCommuteTime, testApiKey, getWeatherInfo, getWeatherIcon, geocode, getStaticMapUrl, MODE_LABELS, TRAFFIC_LABELS, TRAFFIC_ICONS } from '../lib/amap.js';
 import { getDateInfo } from '../lib/calendar.js';
 
 // ==================== DOM 引用 ====================
@@ -717,42 +717,26 @@ async function showResultModal(group, result) {
   }
   html += `</div>`;
 
-  // v2.5: 交互地图
-  if (result.polyline) {
-    html += `<div id="resultMap" class="result-map-container" style="height:200px;"></div>`;
+  // v2.5: 路线图
+  const apiKey = await getApiKey();
+  const mapUrl = apiKey ? getStaticMapUrl(result, apiKey) : '';
+  if (mapUrl) {
+    html += `<div class="result-map-container">
+      <img class="result-map" src="${mapUrl}" alt="路线图" onerror="this.style.display='none';this.nextElementSibling.style.display='block';">
+      <div class="result-map-fallback" style="display:none;text-align:center;padding:12px;color:#aeaeb2;">⚠️ 路线图加载失败</div>
+    </div>`;
+  }
+
+  // 在新标签页查看路线
+  const o = result.originCoord;
+  const d = result.destCoord;
+  if (o && d) {
+    const navUrl = `https://uri.amap.com/navigation?from=${o.lng},${o.lat},${encodeURIComponent(result.origin)}&to=${d.lng},${d.lat},${encodeURIComponent(result.destination)}&mode=${result.mode}`;
+    html += `<a class="result-nav-link" href="${navUrl}" target="_blank">🗺️ 在新标签页查看完整路线 →</a>`;
   }
 
   resultBody.innerHTML = html;
   resultModal.classList.remove('hidden');
-
-  // 渲染 Leaflet 交互地图
-  if (result.polyline) {
-    setTimeout(() => renderResultMap(result), 100);
-  }
-}
-
-function renderResultMap(result) {
-  const container = document.getElementById('resultMap');
-  if (!container || !window.L) return;
-
-  const o = result.originCoord;
-  const d = result.destCoord;
-  const coords = decodePolyline(result.polyline);
-
-  const map = L.map(container, { attributionControl: false, zoomControl: true });
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
-
-  if (coords.length > 0) {
-    L.polyline(coords, { color: '#007AFF', weight: 4 }).addTo(map);
-  }
-
-  // 起点/终点标记
-  const startIcon = L.divIcon({ html: '🟢', className: 'map-marker', iconSize: [20,20] });
-  const endIcon = L.divIcon({ html: '🔴', className: 'map-marker', iconSize: [20,20] });
-  L.marker(coords[0] || [o.lat, o.lng], { icon: startIcon }).addTo(map);
-  L.marker(coords[coords.length-1] || [d.lat, d.lng], { icon: endIcon }).addTo(map);
-
-  map.fitBounds(coords.length > 0 ? coords : [[o.lat, o.lng], [d.lat, d.lng]], { padding: [20, 20] });
 }
 
 closeResultBtn.addEventListener('click', () => resultModal.classList.add('hidden'));
