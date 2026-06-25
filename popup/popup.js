@@ -91,6 +91,10 @@ const dayStartTime   = $('#dayStartTime');
 const dayEndTime     = $('#dayEndTime');
 const nightStartTime = $('#nightStartTime');
 const nightEndTime   = $('#nightEndTime');
+const adjustAmStart  = $('#adjustAmStart');
+const adjustAmEnd    = $('#adjustAmEnd');
+const adjustPmStart  = $('#adjustPmStart');
+const adjustPmEnd    = $('#adjustPmEnd');
 const saveShiftTimesBtn = $('#saveShiftTimesBtn');
 
 // v2.5: 天气城市
@@ -316,6 +320,18 @@ async function renderGroupList(groups) {
     const card = createGroupCard(g);
     groupList.appendChild(card);
   });
+
+  // v2.6: 根据当前时间更新卡片方向
+  for (const g of sorted) {
+    const dir = await getCurrentDirection(g);
+    if (dir === 'reversed') {
+      const card = groupList.querySelector(`[data-id="${g.id}"]`);
+      if (card) {
+        const route = card.querySelector('.card-route');
+        if (route) route.innerHTML = `<span>${escHtml(g.destination)}</span><span class='arrow'>←</span><span>${escHtml(g.origin)}</span>`;
+      }
+    }
+  }
 }
 
 /**
@@ -337,6 +353,46 @@ async function sortByTodayShift(groups) {
     // 最后按更新时间倒序
     return (b.updatedAt || b.createdAt || 0) - (a.updatedAt || a.createdAt || 0);
   });
+}
+
+// v2.6: 根据班次日历+班次时间判断当前展示方向
+async function getCurrentDirection(group) {
+  const cal = await getShiftCalendar();
+  const today = new Date();
+  const ds = `${today.getFullYear()}-${pad(today.getMonth()+1)}-${pad(today.getDate())}`;
+  const entry = cal[ds];
+  if (!entry) return 'normal'; // 无日历记录，保持起点→终点
+
+  const settings = await getGlobalSettings();
+  const nowMin = today.getHours() * 60 + today.getMinutes();
+  let workStart, workEnd;
+
+  if (entry.type === 'day') {
+    workStart = parseTime(settings.dayShiftStart);
+    workEnd = parseTime(settings.dayShiftEnd);
+  } else if (entry.type === 'night') {
+    workStart = parseTime(settings.nightShiftStart);
+    workEnd = parseTime(settings.nightShiftEnd);
+  } else if (entry.type === 'adjust' && entry.sub === 'am') {
+    workStart = parseTime(settings.adjustAmStart);
+    workEnd = parseTime(settings.adjustAmEnd);
+  } else if (entry.type === 'adjust' && entry.sub === 'pm') {
+    workStart = parseTime(settings.adjustPmStart);
+    workEnd = parseTime(settings.adjustPmEnd);
+  } else {
+    return 'normal'; // 休息日
+  }
+
+  // 夜班跨午夜处理
+  if (workEnd < workStart) workEnd += 24 * 60;
+  const checkMin = (entry.type === 'night' && nowMin < workStart) ? nowMin + 24 * 60 : nowMin;
+
+  return (checkMin >= workStart && checkMin < workEnd) ? 'reversed' : 'normal';
+}
+
+function parseTime(t) {
+  const [h, m] = (t || '00:00').split(':').map(Number);
+  return h * 60 + m;
 }
 
 function createGroupCard(group) {
@@ -494,13 +550,18 @@ async function handleQuery(id, btn) {
   const apiKey = await getApiKey();
   if (!apiKey) { alert('请先配置 API Key'); return; }
 
+  // v2.6: 上班时间查回家路线
+  const dir = await getCurrentDirection(group);
+  const origin = dir === 'reversed' ? group.destination : group.origin;
+  const destination = dir === 'reversed' ? group.origin : group.destination;
+
   const origText = btn.textContent;
   btn.textContent = '⏳ 查询中...';
   btn.disabled = true;
   btn.classList.add('loading');
 
   try {
-    const result = await getCommuteTime(group.origin, group.destination, group.mode, apiKey);
+    const result = await getCommuteTime(origin, destination, group.mode, apiKey);
     await updateGroupResult(id, result);
     // v2.4: 手动查询保存历史记录
     await addHistoryRecord(id, {
@@ -772,6 +833,10 @@ settingsBtn.addEventListener('click', async () => {
   dayEndTime.value = settings.dayShiftEnd || '17:00';
   nightStartTime.value = settings.nightShiftStart || '20:00';
   nightEndTime.value = settings.nightShiftEnd || '08:00';
+  adjustAmStart.value = settings.adjustAmStart || '08:00';
+  adjustAmEnd.value = settings.adjustAmEnd || '12:00';
+  adjustPmStart.value = settings.adjustPmStart || '12:00';
+  adjustPmEnd.value = settings.adjustPmEnd || '17:00';
   // v2.5: 加载行政区下拉
   if (key && districtTree.length === 0) {
     try { districtTree = await getDistrictTree(key); } catch { /* 静默 */ }
@@ -837,6 +902,10 @@ saveShiftTimesBtn.addEventListener('click', async () => {
     dayShiftEnd: dayEndTime.value || '17:00',
     nightShiftStart: nightStartTime.value || '20:00',
     nightShiftEnd: nightEndTime.value || '08:00',
+    adjustAmStart: adjustAmStart.value || '08:00',
+    adjustAmEnd: adjustAmEnd.value || '12:00',
+    adjustPmStart: adjustPmStart.value || '12:00',
+    adjustPmEnd: adjustPmEnd.value || '17:00',
   });
   saveShiftTimesBtn.textContent = '✅ 已保存';
   saveShiftTimesBtn.classList.add('btn-primary');
@@ -1182,8 +1251,13 @@ startCompareBtn.addEventListener('click', async () => {
   compareBody.innerHTML = '<div style="text-align:center;padding:20px;color:#aeaeb2;">⏳ 正在查询...</div>';
 
   // 并行查询所有选中方式
+  // v2.6: 对比也跟随方向
+  const dir = await getCurrentDirection(group);
+  const origin = dir === 'reversed' ? group.destination : group.origin;
+  const destination = dir === 'reversed' ? group.origin : group.destination;
+
   const promises = modes.map(mode =>
-    getCommuteTime(group.origin, group.destination, mode, apiKey)
+    getCommuteTime(origin, destination, mode, apiKey)
       .then(r => ({ ...r, error: null }))
       .catch(e => ({ mode, error: e.message }))
   );

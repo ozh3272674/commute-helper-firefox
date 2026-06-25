@@ -1,8 +1,6 @@
 ﻿<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'>
-  <rect x='2' y='5' width='12' height='7' rx='2' fill='none' stroke='#1d1d1f' stroke-width='1.5'/>
-  <line x1='1' y1='7' x2='3' y2='7' stroke='#1d1d1f' stroke-width='1.5' stroke-linecap='round'/>
-  <line x1='13' y1='7' x2='15' y2='7' stroke='#1d1d1f' stroke-width='1.5' stroke-linecap='round'/>
-  <rect x='5' y='3' width='5' height='3' rx='1' fill='#007AFF'/>
-  <circle cx='4' cy='12.5' r='1.5' fill='#1d1d1f'/>
-  <circle cx='12' cy='12.5' r='1.5' fill='#1d1d1f'/>
+  <path d='M1 8 L2 5 L5 4 L11 4 L14 5 L15 8 L15 10 L14 11 L13 11 L12 10 L12 8 L4 8 L4 10 L3 11 L2 11 L1 10 Z' fill='none' stroke='#1d1d1f' stroke-width='1.3' stroke-linejoin='round'/>
+  <rect x='4' y='2' width='6' height='2.5' rx='1' fill='#007AFF'/>
+  <circle cx='4' cy='12' r='1.8' fill='#1d1d1f'/>
+  <circle cx='12' cy='12' r='1.8' fill='#1d1d1f'/>
 </svg>
