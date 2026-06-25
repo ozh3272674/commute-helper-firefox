@@ -14,7 +14,7 @@ import {
   getHistoryLimit, setHistoryLimit,
   getWeatherCity, setWeatherCity,
 } from '../lib/storage.js';
-import { getCommuteTime, testApiKey, getWeatherInfo, getWeatherIcon, geocode, MODE_LABELS, TRAFFIC_LABELS, TRAFFIC_ICONS } from '../lib/amap.js';
+import { getCommuteTime, testApiKey, getWeatherInfo, getWeatherIcon, geocode, getDistrictTree, MODE_LABELS, TRAFFIC_LABELS, TRAFFIC_ICONS } from '../lib/amap.js';
 import { getDateInfo } from '../lib/calendar.js';
 
 // ==================== DOM 引用 ====================
@@ -92,9 +92,11 @@ const nightEndTime   = $('#nightEndTime');
 const saveShiftTimesBtn = $('#saveShiftTimesBtn');
 
 // v2.5: 天气城市
-const weatherCityInput  = $('#weatherCityInput');
-const weatherCityMsg    = $('#weatherCityMsg');
-const saveWeatherCityBtn = $('#saveWeatherCityBtn');
+const weatherProvince = $('#weatherProvince');
+const weatherCitySel  = $('#weatherCity');
+const weatherDistrict = $('#weatherDistrict');
+const weatherCityMsg  = $('#weatherCityMsg');
+let districtTree = [];
 
 // v2.3: 日历
 const calendarContainer = $('#calendarContainer');
@@ -767,9 +769,15 @@ settingsBtn.addEventListener('click', async () => {
   dayEndTime.value = settings.dayShiftEnd || '17:00';
   nightStartTime.value = settings.nightShiftStart || '20:00';
   nightEndTime.value = settings.nightShiftEnd || '08:00';
-  // v2.5: 加载天气城市
+  // v2.5: 加载行政区下拉
+  if (key && districtTree.length === 0) {
+    try { districtTree = await getDistrictTree(key); } catch { /* 静默 */ }
+    rebuildProvinceOptions();
+  }
   const city = await getWeatherCity();
-  weatherCityInput.value = city ? city.name : '';
+  if (city && city.adcode) {
+    await selectCityByAdcode(city.adcode);
+  }
   weatherCityMsg.classList.add('hidden');
   settingsModal.classList.remove('hidden');
   // v2.3: 渲染日历
@@ -835,26 +843,97 @@ saveShiftTimesBtn.addEventListener('click', async () => {
   }, 1500);
 });
 
-// v2.5: 保存天气城市
-saveWeatherCityBtn.addEventListener('click', async () => {
-  const name = weatherCityInput.value.trim();
-  if (!name) { showMessage(weatherCityMsg, '请输入城市名称', 'error'); return; }
-  saveWeatherCityBtn.disabled = true;
-  saveWeatherCityBtn.textContent = '⏳ 定位中...';
-  try {
-    const apiKey = await getApiKey();
-    if (!apiKey) { showMessage(weatherCityMsg, '请先配置 API Key', 'error'); return; }
-    const geo = await geocode(name, apiKey);
-    await setWeatherCity({ name: geo.name, adcode: geo.adcode });
-    showMessage(weatherCityMsg, `✅ 已保存：${geo.name}`, 'success');
-    await refreshWeather();
-  } catch (e) {
-    showMessage(weatherCityMsg, '❌ 定位失败，请检查城市名称', 'error');
-  } finally {
-    saveWeatherCityBtn.disabled = false;
-    saveWeatherCityBtn.textContent = '💾 保存城市';
-  }
+// v2.5: 天气城市联动下拉
+function rebuildProvinceOptions() {
+  weatherProvince.innerHTML = '<option value="">-- 选择省 --</option>';
+  districtTree.forEach(p => {
+    weatherProvince.innerHTML += `<option value="${p.adcode}">${p.name}</option>`;
+  });
+}
+
+function rebuildCityOptions(provinceAdcode) {
+  weatherCitySel.innerHTML = '<option value="">-- 选择市 --</option>';
+  weatherDistrict.innerHTML = '<option value="">-- 选择区县 --</option>';
+  if (!provinceAdcode) return;
+  const province = districtTree.find(p => p.adcode === provinceAdcode);
+  if (!province || !province.districts) return;
+  province.districts.forEach(c => {
+    weatherCitySel.innerHTML += `<option value="${c.adcode}">${c.name}</option>`;
+  });
+}
+
+function rebuildDistrictOptions(cityAdcode) {
+  weatherDistrict.innerHTML = '<option value="">-- 选择区县 --</option>';
+  if (!cityAdcode) return;
+  const provinceAdcode = weatherProvince.value;
+  const province = districtTree.find(p => p.adcode === provinceAdcode);
+  if (!province || !province.districts) return;
+  const city = province.districts.find(c => c.adcode === cityAdcode);
+  if (!city || !city.districts) return;
+  city.districts.forEach(d => {
+    weatherDistrict.innerHTML += `<option value="${d.adcode}">${d.name}</option>`;
+  });
+}
+
+weatherProvince.addEventListener('change', () => {
+  rebuildCityOptions(weatherProvince.value);
+  saveDistrict();
 });
+
+weatherCitySel.addEventListener('change', () => {
+  rebuildDistrictOptions(weatherCitySel.value);
+  saveDistrict();
+});
+
+weatherDistrict.addEventListener('change', () => saveDistrict());
+
+// 选择区县后自动保存
+async function saveDistrict() {
+  const district = weatherDistrict.value;
+  if (!district) return;
+  const name = weatherDistrict.selectedOptions[0]?.textContent || '';
+  if (!name || name.startsWith('--')) return;
+  await setWeatherCity({ name, adcode: district });
+  showMessage(weatherCityMsg, `✅ 已保存：${name}`, 'success');
+  setTimeout(() => weatherCityMsg.classList.add('hidden'), 2000);
+  await refreshWeather();
+}
+
+// 根据已保存的 adcode 回填下拉框
+async function selectCityByAdcode(adcode) {
+  if (districtTree.length === 0) return;
+
+  // 在树中找到对应的省/市/区
+  for (const p of districtTree) {
+    // 检查是否是省直辖
+    if (p.adcode === adcode) {
+      weatherProvince.value = p.adcode;
+      rebuildCityOptions(p.adcode);
+      return;
+    }
+    if (!p.districts) continue;
+    for (const c of p.districts) {
+      if (c.adcode === adcode) {
+        weatherProvince.value = p.adcode;
+        rebuildCityOptions(p.adcode);
+        weatherCitySel.value = c.adcode;
+        rebuildDistrictOptions(c.adcode);
+        return;
+      }
+      if (!c.districts) continue;
+      for (const d of c.districts) {
+        if (d.adcode === adcode) {
+          weatherProvince.value = p.adcode;
+          rebuildCityOptions(p.adcode);
+          weatherCitySel.value = c.adcode;
+          rebuildDistrictOptions(c.adcode);
+          weatherDistrict.value = d.adcode;
+          return;
+        }
+      }
+    }
+  }
+}
 
 // v2.5: 反馈按钮 → 跳转 GitHub Issues
 const feedbackBtn = $('#feedbackBtn');
