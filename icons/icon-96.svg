@@ -1,6 +1,8 @@
 ﻿<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 96 96'>
-  <rect width='96' height='96' rx='20' fill='#007AFF'/>
-  <circle cx='26' cy='26' r='10' fill='#fff'/>
-  <circle cx='70' cy='70' r='10' fill='#fff'/>
-  <path d='M26 36 Q48 60 60 60 Q72 60 70 60' fill='none' stroke='#fff' stroke-width='6' stroke-linecap='round'/>
+  <rect x='10' y='30' width='76' height='40' rx='12' fill='none' stroke='#1d1d1f' stroke-width='5'/>
+  <line x1='4' y1='42' x2='18' y2='42' stroke='#1d1d1f' stroke-width='5' stroke-linecap='round'/>
+  <line x1='78' y1='42' x2='92' y2='42' stroke='#1d1d1f' stroke-width='5' stroke-linecap='round'/>
+  <rect x='32' y='14' width='28' height='18' rx='5' fill='#007AFF'/>
+  <circle cx='24' cy='74' r='9' fill='#1d1d1f'/>
+  <circle cx='72' cy='74' r='9' fill='#1d1d1f'/>
 </svg>
