@@ -73,7 +73,13 @@
       <h3 id="modalTitle">新建地点组</h3>
       <div class="form-group">
         <label for="groupName">组名称</label>
-        <input type="text" id="groupName" placeholder="例如：家到公司">
+        <input type="text" id="groupName" placeholder="例如：上班通勤">
+      </div>
+      <div class="form-group">
+        <label for="presetSelect">📍 选择地点</label>
+        <select id="presetSelect">
+          <option value="">-- 自定义地址 --</option>
+        </select>
       </div>
       <div class="form-group">
         <label for="originAddr">起点地址</label>
@@ -235,6 +241,21 @@
           </div>
         </div>
         <div id="weatherCityMsg" class="msg hidden"></div>
+      </div>
+
+      <hr class="settings-divider">
+
+      <!-- v2.6: 地点库 -->
+      <div class="settings-section">
+        <h4>📍 地点库</h4>
+        <p class="section-desc">管理常用的起点/终点配对，卡片可直接选用</p>
+        <div id="presetList" class="preset-list"></div>
+        <div class="preset-add">
+          <input type="text" id="presetName" placeholder="名称（如：家到公司）" class="preset-input">
+          <input type="text" id="presetOrigin" placeholder="起点地址" class="preset-input">
+          <input type="text" id="presetDest" placeholder="终点地址" class="preset-input">
+          <button id="addPresetBtn" class="btn btn-primary btn-sm">＋ 添加</button>
+        </div>
       </div>
 
       <hr class="settings-divider">

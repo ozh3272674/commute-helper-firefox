@@ -512,3 +512,26 @@ header h2 { font-size: 17px; font-weight: 700; color: var(--text); }
   font-weight: 500;
 }
 .result-nav-link:hover { text-decoration: underline; }
+
+/* ==================== v2.6 地点库 ==================== */
+.preset-list {
+  margin-bottom: 8px; max-height: 150px; overflow-y: auto;
+}
+.preset-item {
+  display: flex; align-items: center; gap: 6px;
+  padding: 6px 8px; margin-bottom: 3px; border-radius: 6px;
+  background: #f9f9fb; font-size: 12px;
+}
+.preset-name { font-weight: 600; color: var(--text); white-space: nowrap; }
+.preset-route { color: var(--text2); flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.preset-del {
+  border: none; background: transparent; color: var(--text3);
+  cursor: pointer; font-size: 14px; padding: 2px 4px; border-radius: 4px;
+}
+.preset-del:hover { background: #ffebed; color: var(--red); }
+.preset-add {
+  display: flex; flex-direction: column; gap: 4px;
+}
+.preset-input {
+  padding: 6px 10px !important; font-size: 12px !important;
+}

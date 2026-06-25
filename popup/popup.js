@@ -13,6 +13,7 @@ import {
   addHistoryRecord, getHistoryRecords, getHistoryInRange,
   getHistoryLimit, setHistoryLimit,
   getWeatherCity, setWeatherCity,
+  getLocationPresets, saveLocationPreset, deleteLocationPreset,
 } from '../lib/storage.js';
 import { getCommuteTime, testApiKey, getWeatherInfo, getWeatherIcon, geocode, getDistrictTree, MODE_LABELS, TRAFFIC_LABELS, TRAFFIC_ICONS } from '../lib/amap.js';
 import { getDateInfo } from '../lib/calendar.js';
@@ -53,6 +54,7 @@ const holidaySub  = $('#holidaySub');
 const editModal    = $('#editModal');
 const modalTitle   = $('#modalTitle');
 const groupName    = $('#groupName');
+const presetSelect = $('#presetSelect');
 const originAddr   = $('#originAddr');
 const destAddr     = $('#destAddr');
 const arriveBy     = $('#arriveBy');
@@ -538,6 +540,7 @@ addGroupBtn.addEventListener('click', () => openEditModal(null));
 
 function openEditModal(group = null) {
   editingGroupId = group?.id || null;
+  loadPresetOptions();
 
   if (group) {
     modalTitle.textContent = '编辑地点组';
@@ -785,6 +788,8 @@ settingsBtn.addEventListener('click', async () => {
   calYear = now.getFullYear();
   calMonth = now.getMonth() + 1;
   renderCalendar();
+  // v2.6: 加载地点库
+  await loadPresetList();
   // v2.4: 加载历史限制按钮状态
   const limit = await getHistoryLimit();
   document.querySelectorAll('.history-limit-btn').forEach(b => {
@@ -942,6 +947,62 @@ if (feedbackBtn) {
     browser.tabs.create({ url: 'https://github.com/ozh3272674/commute-helper-firefox/issues' });
   });
 }
+
+// ==================== v2.6 地点库管理 ====================
+
+const presetList = $('#presetList');
+const presetNameI = $('#presetName');
+const presetOriginI = $('#presetOrigin');
+const presetDestI = $('#presetDest');
+const addPresetBtn = $('#addPresetBtn');
+
+async function loadPresetList() {
+  const presets = await getLocationPresets();
+  if (presets.length === 0) {
+    presetList.innerHTML = '<div style="text-align:center;color:#aeaeb2;padding:8px;font-size:12px;">暂无地点，用下方表单添加</div>';
+  } else {
+    presetList.innerHTML = presets.map(p => `
+      <div class="preset-item">
+        <span class="preset-name">📍 ${escHtml(p.name)}</span>
+        <span class="preset-route">${escHtml(p.origin)} → ${escHtml(p.destination)}</span>
+        <button class="preset-del" data-id="${p.id}">✕</button>
+      </div>
+    `).join('');
+  }
+}
+
+addPresetBtn.addEventListener('click', async () => {
+  const n = presetNameI.value.trim();
+  const o = presetOriginI.value.trim();
+  const d = presetDestI.value.trim();
+  if (!n || !o || !d) { alert('请填写名称、起点和终点'); return; }
+  await saveLocationPreset({ name: n, origin: o, destination: d });
+  presetNameI.value = ''; presetOriginI.value = ''; presetDestI.value = '';
+  await loadPresetList();
+});
+
+presetList.addEventListener('click', async (e) => {
+  const btn = e.target.closest('.preset-del');
+  if (!btn) return;
+  if (!confirm('确定删除这个地点？')) return;
+  await deleteLocationPreset(btn.dataset.id);
+  await loadPresetList();
+});
+
+async function loadPresetOptions() {
+  const presets = await getLocationPresets();
+  presetSelect.innerHTML = '<option value="">-- 自定义地址 --</option>' +
+    presets.map(p => `<option value="${p.id}">${escHtml(p.name)}</option>`).join('');
+}
+
+presetSelect.addEventListener('change', () => {
+  const id = presetSelect.value;
+  if (!id) return;
+  getLocationPresets().then(presets => {
+    const p = presets.find(p => p.id === id);
+    if (p) { originAddr.value = p.origin; destAddr.value = p.destination; }
+  });
+});
 
 // ==================== v2.4 历史记录弹窗 ====================
 
