@@ -8,7 +8,8 @@
   "browser_specific_settings": {
     "gecko": {
       "id": "commute-helper@ozh3272674",
-      "strict_min_version": "115.0"
+      "strict_min_version": "115.0",
+      "data_collection_permissions": []
     }
   },
 
@@ -23,8 +24,6 @@
     "https://restapi.amap.com/*",
     "https://timor.tech/*"
   ],
-
-  "data_collection_permissions": [],
 
   "action": {
     "default_title": "通勤助手",
