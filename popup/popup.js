@@ -1089,8 +1089,8 @@ async function loadQuotaMonitor() {
   const limit = await getApiLimit();
   const count = await getApiCount();
   $('#quotaLimit').value = limit;
-  drawQuotaPie(count.count, limit);
-  $('#quotaInfo').innerHTML = `今日已用 <strong>${count.count}</strong> / ${limit} 次`;
+  const remain = Math.max(0, limit - count.count);
+  $('#quotaInfo').innerHTML = `📊 今日: <strong>${count.count}</strong> 次 / 剩余: <strong>${remain}</strong> 次（限额 ${limit}）`;
 
   const btn = $('#saveQuotaBtn');
   if (!btn._bound) {
@@ -1100,38 +1100,12 @@ async function loadQuotaMonitor() {
       await loadQuotaMonitor();
     });
   }
-}
 
-function drawQuotaPie(used, total) {
-  const canvas = $('#quotaCanvas');
-  if (!canvas) return;
-  const ctx = canvas.getContext('2d');
-  const cx = 70, cy = 70, r = 50;
-  ctx.clearRect(0, 0, 200, 140);
-
-  const pct = Math.min(used / total, 1);
-  const remain = total - used;
-
-  ctx.beginPath(); ctx.moveTo(cx, cy);
-  ctx.arc(cx, cy, r, -Math.PI/2, -Math.PI/2 + pct * Math.PI*2);
-  ctx.fillStyle = '#007AFF'; ctx.fill();
-
-  ctx.beginPath(); ctx.moveTo(cx, cy);
-  ctx.arc(cx, cy, r, -Math.PI/2 + pct * Math.PI*2, -Math.PI/2);
-  ctx.fillStyle = '#e5e5ea'; ctx.fill();
-
-  ctx.fillStyle = '#1d1d1f'; ctx.font = 'bold 13px -apple-system, sans-serif';
-  ctx.textAlign = 'center';
-  ctx.fillText(Math.round(pct*100) + '%', cx, cy-4);
-  ctx.font = '10px -apple-system, sans-serif'; ctx.fillStyle = '#86868b';
-  ctx.fillText('已用', cx, cy+12);
-
-  ctx.fillStyle = '#007AFF'; ctx.fillRect(140, 30, 10, 10);
-  ctx.fillStyle = '#1d1d1f'; ctx.font = '10px -apple-system, sans-serif';
-  ctx.textAlign = 'left'; ctx.fillText('已用 '+used, 154, 39);
-
-  ctx.fillStyle = '#e5e5ea'; ctx.fillRect(140, 50, 10, 10);
-  ctx.fillText('剩余 '+remain, 154, 59);
+  const refreshBtn = $('#refreshQuotaBtn');
+  if (!refreshBtn._bound) {
+    refreshBtn._bound = true;
+    refreshBtn.addEventListener('click', () => loadQuotaMonitor());
+  }
 }
 
 // ==================== v2.4 历史记录弹窗 ====================
