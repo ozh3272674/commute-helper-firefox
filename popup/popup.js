@@ -967,7 +967,11 @@ async function loadPresetList() {
           <span class="preset-name">📍 ${escHtml(p.name)}</span>
           <button class="preset-del" data-id="${p.id}">✕</button>
         </div>
-        <div class="preset-route">${escHtml(p.origin)} <span class="preset-arrow">↔</span> ${escHtml(p.destination)}</div>
+        <div class="preset-route-row">
+          <span class="preset-origin">${escHtml(p.origin)}</span>
+          <span class="preset-arrow">→</span>
+          <span class="preset-dest">${escHtml(p.destination)}</span>
+        </div>
       </div>
     `).join('');
   }
