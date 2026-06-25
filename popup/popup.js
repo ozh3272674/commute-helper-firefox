@@ -14,8 +14,9 @@ import {
   getHistoryLimit, setHistoryLimit,
   getWeatherCity, setWeatherCity,
   getLocationPresets, saveLocationPreset, deleteLocationPreset,
+  incrementApiCount, getApiCount, getApiLimit, setApiLimit,
 } from '../lib/storage.js';
-import { getCommuteTime, testApiKey, getWeatherInfo, getWeatherIcon, geocode, getDistrictTree, MODE_LABELS, TRAFFIC_LABELS, TRAFFIC_ICONS } from '../lib/amap.js';
+import { getCommuteTime, testApiKey, getWeatherInfo, getWeatherIcon, geocode, getDistrictTree, setApiCounter, MODE_LABELS, TRAFFIC_LABELS, TRAFFIC_ICONS } from '../lib/amap.js';
 import { getDateInfo } from '../lib/calendar.js';
 
 // ==================== DOM 引用 ====================
@@ -136,6 +137,7 @@ let allGroups = [];
 document.addEventListener('DOMContentLoaded', init);
 
 async function init() {
+  setApiCounter(() => incrementApiCount(1));
   const key = await getApiKey();
   if (key) {
     showMainPage();
@@ -855,6 +857,8 @@ settingsBtn.addEventListener('click', async () => {
   renderCalendar();
   // v2.6: 加载地点库
   await loadPresetList();
+  // v2.6: 加载配额监控
+  await loadQuotaMonitor();
   // v2.4: 加载历史限制按钮状态
   const limit = await getHistoryLimit();
   document.querySelectorAll('.history-limit-btn').forEach(b => {
@@ -1078,6 +1082,57 @@ presetSelect.addEventListener('change', () => {
     if (p) { originAddr.value = p.origin; destAddr.value = p.destination; }
   });
 });
+
+// ==================== v2.6 API 配额监控 ====================
+
+async function loadQuotaMonitor() {
+  const limit = await getApiLimit();
+  const count = await getApiCount();
+  $('#quotaLimit').value = limit;
+  drawQuotaPie(count.count, limit);
+  $('#quotaInfo').innerHTML = `今日已用 <strong>${count.count}</strong> / ${limit} 次`;
+
+  const btn = $('#saveQuotaBtn');
+  if (!btn._bound) {
+    btn._bound = true;
+    btn.addEventListener('click', async () => {
+      await setApiLimit(parseInt($('#quotaLimit').value) || 5000);
+      await loadQuotaMonitor();
+    });
+  }
+}
+
+function drawQuotaPie(used, total) {
+  const canvas = $('#quotaCanvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const cx = 70, cy = 70, r = 50;
+  ctx.clearRect(0, 0, 200, 140);
+
+  const pct = Math.min(used / total, 1);
+  const remain = total - used;
+
+  ctx.beginPath(); ctx.moveTo(cx, cy);
+  ctx.arc(cx, cy, r, -Math.PI/2, -Math.PI/2 + pct * Math.PI*2);
+  ctx.fillStyle = '#007AFF'; ctx.fill();
+
+  ctx.beginPath(); ctx.moveTo(cx, cy);
+  ctx.arc(cx, cy, r, -Math.PI/2 + pct * Math.PI*2, -Math.PI/2);
+  ctx.fillStyle = '#e5e5ea'; ctx.fill();
+
+  ctx.fillStyle = '#1d1d1f'; ctx.font = 'bold 13px -apple-system, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText(Math.round(pct*100) + '%', cx, cy-4);
+  ctx.font = '10px -apple-system, sans-serif'; ctx.fillStyle = '#86868b';
+  ctx.fillText('已用', cx, cy+12);
+
+  ctx.fillStyle = '#007AFF'; ctx.fillRect(140, 30, 10, 10);
+  ctx.fillStyle = '#1d1d1f'; ctx.font = '10px -apple-system, sans-serif';
+  ctx.textAlign = 'left'; ctx.fillText('已用 '+used, 154, 39);
+
+  ctx.fillStyle = '#e5e5ea'; ctx.fillRect(140, 50, 10, 10);
+  ctx.fillText('剩余 '+remain, 154, 59);
+}
 
 // ==================== v2.4 历史记录弹窗 ====================
 

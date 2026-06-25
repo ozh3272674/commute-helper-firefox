@@ -327,6 +327,24 @@
 
       <hr class="settings-divider">
 
+      <!-- v2.6: API 配额监控 -->
+      <div class="settings-section">
+        <h4>📊 API 配额监控</h4>
+        <canvas id="quotaCanvas" width="200" height="140" class="quota-canvas"></canvas>
+        <div class="quota-info" id="quotaInfo"></div>
+        <div class="form-row" style="margin-top:6px">
+          <div class="form-group flex-1">
+            <label for="quotaLimit">每日配额上限</label>
+            <input type="number" id="quotaLimit" value="5000" min="100" step="100">
+          </div>
+          <div class="form-group flex-1" style="justify-content:flex-end;display:flex;align-items:flex-end;">
+            <button id="saveQuotaBtn" class="btn btn-secondary btn-sm">💾 保存</button>
+          </div>
+        </div>
+      </div>
+
+      <hr class="settings-divider">
+
       <!-- v2.2: 导入导出 -->
       <div class="settings-section">
         <h4>📦 数据备份</h4>

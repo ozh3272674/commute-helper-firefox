@@ -6,11 +6,13 @@
 import {
   getApiKey, getGroupsWithEnabledSlots, updateGroupResult,
   saveLastWeather, getWeatherCity,
+  incrementApiCount,
 } from '../lib/storage.js';
-import { getCommuteTime, getWeatherInfo, getWeatherIcon, TRAFFIC_LABELS, TRAFFIC_ICONS } from '../lib/amap.js';
+import { getCommuteTime, getWeatherInfo, getWeatherIcon, setApiCounter, TRAFFIC_LABELS, TRAFFIC_ICONS } from '../lib/amap.js';
 import { isTodayWorkday, getDateInfo } from '../lib/calendar.js';
 
 const ALARM_PREFIX = 'commute-';
+setApiCounter(() => incrementApiCount(1));
 
 // ==================== 启动 ====================
 browser.runtime.onInstalled.addListener(() => {
