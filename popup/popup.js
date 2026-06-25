@@ -963,9 +963,11 @@ async function loadPresetList() {
   } else {
     presetList.innerHTML = presets.map(p => `
       <div class="preset-item">
-        <span class="preset-name">📍 ${escHtml(p.name)}</span>
-        <span class="preset-route">${escHtml(p.origin)} → ${escHtml(p.destination)}</span>
-        <button class="preset-del" data-id="${p.id}">✕</button>
+        <div class="preset-top">
+          <span class="preset-name">📍 ${escHtml(p.name)}</span>
+          <button class="preset-del" data-id="${p.id}">✕</button>
+        </div>
+        <div class="preset-route">${escHtml(p.origin)} <span class="preset-arrow">↔</span> ${escHtml(p.destination)}</div>
       </div>
     `).join('');
   }
