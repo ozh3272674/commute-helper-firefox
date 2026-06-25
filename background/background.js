@@ -292,6 +292,22 @@ browser.runtime.onMessage.addListener(async (message) => {
     return { success: true };
   }
 
+  // v2.5: 处理导出下载（支持 saveAs 对话框）
+  if (message.action === 'exportDownload') {
+    const blob = new Blob([message.data], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    try {
+      await browser.downloads.download({
+        url,
+        filename: message.filename,
+        saveAs: true,
+      });
+    } finally {
+      setTimeout(() => URL.revokeObjectURL(url), 5000);
+    }
+    return { success: true };
+  }
+
   if (message.action === 'runNow') {
     const groups = await getGroupsWithEnabledSlots();
     for (const group of groups) {
