@@ -272,14 +272,13 @@ async function loadHolidayStatus() {
   }
 }
 
-// ==================== 设置页面 ====================
+// ==================== 设置页面事件 ====================
 toggleKeyVis.addEventListener('click', () => {
   apiKeyInput.type = apiKeyInput.type === 'password' ? 'text' : 'password';
   toggleKeyVis.textContent = apiKeyInput.type === 'password' ? '👁️' : '🙈';
 });
 
-// 测试并保存——通过 window 全局函数暴露给 HTML onclick
-window._testKey = async () => {
+testKeyBtn.addEventListener('click', async () => {
   const key = apiKeyInput.value.trim();
   if (!key) { showMessage(setupMsg, '请输入 API Key', 'error'); return; }
 
@@ -298,7 +297,7 @@ window._testKey = async () => {
     testKeyBtn.disabled = false;
     testKeyBtn.textContent = '🧪 测试并保存';
   }
-};
+});
 
 // ==================== 地点组列表 ====================
 async function loadGroups() {
