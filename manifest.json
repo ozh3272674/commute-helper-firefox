@@ -1,0 +1,46 @@
+{
+  "manifest_version": 3,
+  "name": "通勤助手",
+  "version": "2.5.0",
+  "description": "自动查询两地之间通勤时间的火狐浏览器扩展",
+  "author": "通勤助手",
+
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "commute-helper@local",
+      "strict_min_version": "115.0"
+    }
+  },
+
+  "permissions": [
+    "storage",
+    "alarms",
+    "notifications",
+    "downloads"
+  ],
+
+  "host_permissions": [
+    "https://restapi.amap.com/*",
+    "https://timor.tech/*"
+  ],
+
+  "action": {
+    "default_title": "通勤助手",
+    "default_popup": "popup/popup.html",
+    "default_icon": {
+      "16": "icons/icon-16.svg",
+      "32": "icons/icon-32.svg",
+      "48": "icons/icon-48.svg"
+    }
+  },
+
+  "background": {
+    "scripts": ["background/background.js"],
+    "type": "module"
+  },
+
+  "icons": {
+    "48": "icons/icon-48.svg",
+    "96": "icons/icon-96.svg"
+  }
+}

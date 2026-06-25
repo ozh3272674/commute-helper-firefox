@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>通勤助手</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+
+  <!-- ======== 设置页面：无 API Key 时显示 ======== -->
+  <div id="setupPage" class="page">
+    <div class="setup-container">
+      <div class="setup-icon">🚗</div>
+      <h1>通勤助手</h1>
+      <p class="setup-desc">请先配置高德地图 API Key 以开始使用</p>
+      <div class="form-group">
+        <label for="apiKeyInput">高德地图 API Key</label>
+        <input type="password" id="apiKeyInput" placeholder="请输入你的 API Key" autocomplete="off">
+        <button id="toggleKeyVisibility" class="toggle-btn" title="显示/隐藏">👁️</button>
+      </div>
+      <div class="setup-actions">
+        <button id="testKeyBtn" class="btn btn-primary">🧪 测试并保存</button>
+      </div>
+      <div class="setup-help">
+        <p>💡 如何获取 API Key？</p>
+        <ol>
+          <li>访问 <a href="https://lbs.amap.com/" target="_blank">高德开放平台</a></li>
+          <li>注册并登录 → 应用管理 → 创建应用</li>
+          <li>添加 Key，服务平台选择 <strong>「Web服务」</strong></li>
+        </ol>
+      </div>
+      <div id="setupMsg" class="msg hidden"></div>
+    </div>
+  </div>
+
+  <!-- ======== 主页面 ======== -->
+  <div id="mainPage" class="page hidden">
+    <header>
+      <h2>🚗 通勤助手</h2>
+      <div class="header-actions">
+        <button id="weatherBtn" class="icon-btn weather-btn" title="点击查询天气">☀️</button>
+        <button id="settingsBtn" class="icon-btn" title="设置">⚙️</button>
+      </div>
+    </header>
+
+    <!-- v2.1: 节假日状态栏 -->
+    <div id="holidayBar" class="holiday-bar hidden">
+      <span id="holidayIcon"></span>
+      <span id="holidayText"></span>
+      <span id="holidaySub" class="holiday-sub"></span>
+    </div>
+
+    <div class="search-bar">
+      <input type="text" id="searchInput" placeholder="🔍 搜索地点组...">
+    </div>
+
+    <div id="groupList" class="group-list"></div>
+    <div id="emptyState" class="empty-state hidden">
+      <p>📋 还没有地点组</p>
+      <p class="empty-hint">点击下方按钮创建第一个吧</p>
+    </div>
+
+    <div class="bottom-bar">
+      <button id="addGroupBtn" class="btn btn-add">＋ 新建地点组</button>
+    </div>
+  </div>
+
+  <!-- ======== 编辑/新建地点组弹窗 ======== -->
+  <div id="editModal" class="modal hidden">
+    <div class="modal-overlay"></div>
+    <div class="modal-content">
+      <h3 id="modalTitle">新建地点组</h3>
+      <div class="form-group">
+        <label for="groupName">组名称</label>
+        <input type="text" id="groupName" placeholder="例如：家到公司">
+      </div>
+      <div class="form-group">
+        <label for="originAddr">起点地址</label>
+        <input type="text" id="originAddr" placeholder="例如：北京市朝阳区xxx路">
+      </div>
+      <div class="form-group">
+        <label for="destAddr">终点地址</label>
+        <input type="text" id="destAddr" placeholder="例如：北京市海淀区xxx街">
+      </div>
+      <div class="form-row">
+        <div class="form-group flex-1">
+          <label for="arriveBy">🏢 希望到岗时间</label>
+          <input type="time" id="arriveBy">
+        </div>
+        <div class="form-group flex-1">
+          <label for="homeBy">🏠 希望到家时间</label>
+          <input type="time" id="homeBy">
+        </div>
+      </div>
+      <div class="form-group">
+        <label for="modeSelect">默认出行方式</label>
+        <select id="modeSelect">
+          <option value="driving">驾车</option>
+          <option value="transit">公共交通</option>
+          <option value="bicycling">骑行</option>
+          <option value="walking">步行</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="shiftSelect">🕐 班次类型</label>
+        <select id="shiftSelect">
+          <option value="day">🟢 白班 — 工作日定时查询 + 迟到预警</option>
+          <option value="night">🟣 晚班 — 工作日定时查询 + 迟到预警</option>
+          <option value="none">⚪ 关闭 — 不参与定时任务</option>
+        </select>
+        <span class="form-hint">非工作日（节假日/休息日）自动暂停定时任务</span>
+      </div>
+      <div class="modal-actions">
+        <button id="cancelEditBtn" class="btn btn-secondary">取消</button>
+        <button id="saveGroupBtn" class="btn btn-primary">💾 保存</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======== 定时设置弹窗（组级） ======== -->
+  <div id="scheduleModal" class="modal hidden">
+    <div class="modal-overlay"></div>
+    <div class="modal-content">
+      <h3>⏰ 定时查询设置</h3>
+      <p id="scheduleGroupName" class="schedule-group-name"></p>
+      <div id="scheduleSlotList" class="slot-list"></div>
+      <div class="schedule-add-row">
+        <input type="time" id="newSlotTime" class="time-input-native">
+        <button id="addScheduleSlotBtn" class="btn btn-primary btn-sm">＋ 添加</button>
+      </div>
+      <div id="scheduleMsg" class="msg hidden"></div>
+      <div class="modal-actions">
+        <button id="closeScheduleBtn" class="btn btn-secondary">关闭</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======== 结果详情弹窗 ======== -->
+  <div id="resultModal" class="modal hidden">
+    <div class="modal-overlay"></div>
+    <div class="modal-content result-content">
+      <h3>📊 通勤查询结果</h3>
+      <div id="resultBody" class="result-body"></div>
+      <div class="modal-actions">
+        <button id="closeResultBtn" class="btn btn-primary">关闭</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======== v2.4 历史记录弹窗 ======== -->
+  <div id="historyModal" class="modal hidden">
+    <div class="modal-overlay"></div>
+    <div class="modal-content">
+      <div class="history-toolbar">
+        <h3>📋 <span id="historyGroupName"></span></h3>
+        <div class="history-toolbar-actions">
+          <button id="trendBtn" class="btn btn-secondary btn-sm">📈 趋势</button>
+          <select id="trendRange" class="trend-range hidden">
+            <option value="7">7天</option>
+            <option value="14" selected>14天</option>
+            <option value="30">30天</option>
+          </select>
+        </div>
+      </div>
+      <canvas id="trendCanvas" class="trend-canvas hidden" width="376" height="220"></canvas>
+      <div id="historyList" class="history-list"></div>
+      <div id="historyEmpty" class="history-empty hidden">暂无历史记录，手动查询后会自动保存</div>
+      <div class="modal-actions">
+        <button id="closeHistoryBtn" class="btn btn-secondary">关闭</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======== v2.4 多方式对比弹窗 ======== -->
+  <div id="compareModal" class="modal hidden">
+    <div class="modal-overlay"></div>
+    <div class="modal-content">
+      <h3>📊 出行方式对比 - <span id="compareGroupName"></span></h3>
+      <div id="compareBody" class="compare-body"></div>
+      <div class="modal-actions">
+        <button id="closeCompareBtn" class="btn btn-secondary">关闭</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======== 对比模式选择浮窗 ======== -->
+  <div id="comparePicker" class="compare-picker hidden">
+    <div class="compare-picker-title">选择对比方式</div>
+    <label class="compare-check"><input type="checkbox" value="driving" checked> 🚗 驾车</label>
+    <label class="compare-check"><input type="checkbox" value="transit" checked> 🚌 公交</label>
+    <label class="compare-check"><input type="checkbox" value="bicycling"> 🚲 骑行</label>
+    <label class="compare-check"><input type="checkbox" value="walking"> 🚶 步行</label>
+    <button id="startCompareBtn" class="btn btn-primary btn-sm" style="width:100%;margin-top:6px;">开始对比</button>
+  </div>
+
+  <!-- ======== API Key 设置弹窗 ======== -->
+  <div id="settingsModal" class="modal hidden">
+    <div class="modal-overlay"></div>
+    <div class="modal-content settings-content">
+      <h3>⚙️ 设置</h3>
+
+      <!-- API Key -->
+      <div class="settings-section">
+        <h4>🔑 高德 API Key</h4>
+        <div class="form-group">
+          <label for="settingsApiKey">API Key</label>
+          <input type="password" id="settingsApiKey" placeholder="输入新的 API Key">
+          <button id="toggleSettingsKey" class="toggle-btn">👁️</button>
+        </div>
+        <div id="settingsMsg" class="msg hidden"></div>
+        <div class="settings-actions">
+          <button id="saveSettingsBtn" class="btn btn-primary btn-sm">🧪 测试并保存</button>
+        </div>
+      </div>
+
+      <hr class="settings-divider">
+
+      <!-- v2.2: 全局班次时间 -->
+      <div class="settings-section">
+        <h4>🕐 班次默认时间</h4>
+        <p class="section-desc">新建地点组时，会根据班次类型自动填入以下时间</p>
+        <div class="form-row">
+          <div class="form-group flex-1">
+            <label for="dayStartTime">🟢 白班上班</label>
+            <input type="time" id="dayStartTime">
+          </div>
+          <div class="form-group flex-1">
+            <label for="dayEndTime">🟢 白班下班</label>
+            <input type="time" id="dayEndTime">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group flex-1">
+            <label for="nightStartTime">🟣 夜班上班</label>
+            <input type="time" id="nightStartTime">
+          </div>
+          <div class="form-group flex-1">
+            <label for="nightEndTime">🟣 夜班下班</label>
+            <input type="time" id="nightEndTime">
+          </div>
+        </div>
+        <div class="settings-actions">
+          <button id="saveShiftTimesBtn" class="btn btn-secondary btn-sm">💾 保存班次时间</button>
+        </div>
+      </div>
+
+      <hr class="settings-divider">
+
+      <!-- v2.3: 班次日历 -->
+      <div class="settings-section">
+        <h4>📅 班次日历</h4>
+        <div id="calendarContainer" class="calendar-container">
+          <!-- 由 JS 动态渲染 -->
+        </div>
+        <p class="section-desc" style="margin-top:4px;">点击日期设置当天班次</p>
+      </div>
+
+      <hr class="settings-divider">
+
+      <!-- v2.2: 导入导出 -->
+      <div class="settings-section">
+        <h4>📦 数据备份</h4>
+        <div class="settings-actions row-actions">
+          <button id="exportBtn" class="btn btn-secondary btn-sm">📤 导出备份</button>
+          <button id="importBtn" class="btn btn-secondary btn-sm">📥 导入备份</button>
+          <input type="file" id="importFileInput" accept=".json" class="hidden">
+        </div>
+      </div>
+
+      <hr class="settings-divider">
+
+      <!-- v2.4: 历史记录上限 -->
+      <div class="settings-section">
+        <h4>📋 历史记录</h4>
+        <p class="section-desc">每组最多保留的手动查询记录数</p>
+        <div class="settings-actions row-actions">
+          <button class="btn btn-sm history-limit-btn" data-limit="20">20条</button>
+          <button class="btn btn-sm history-limit-btn" data-limit="30">30条</button>
+          <button class="btn btn-sm history-limit-btn" data-limit="50">50条</button>
+        </div>
+      </div>
+
+      <div class="modal-actions">
+        <button id="cancelSettingsBtn" class="btn btn-secondary">关闭</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="popup.js" type="module"></script>
+</body>
+</html>
