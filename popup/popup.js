@@ -969,7 +969,7 @@ async function loadPresetList() {
         </div>
         <div class="preset-route-row">
           <span class="preset-origin">${escHtml(p.origin)}</span>
-          <span class="preset-arrow">→</span>
+          <span class="preset-arrow">↔</span>
           <span class="preset-dest">${escHtml(p.destination)}</span>
         </div>
       </div>
