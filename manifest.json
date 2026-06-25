@@ -8,9 +8,16 @@
   "browser_specific_settings": {
     "gecko": {
       "id": "commute-helper@ozh3272674",
-      "strict_min_version": "115.0",
-      "data_collection_permissions": []
+      "strict_min_version": "115.0"
     }
+  },
+
+  "data_collection_permissions": {
+    "usage_data": false,
+    "technical_data": false,
+    "interaction_data": false,
+    "personalization_data": false,
+    "financial_data": false
   },
 
   "permissions": [
