@@ -24,6 +24,8 @@
     "https://timor.tech/*"
   ],
 
+  "data_collection_permissions": [],
+
   "action": {
     "default_title": "通勤助手",
     "default_popup": "popup/popup.html",
