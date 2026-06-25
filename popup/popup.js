@@ -122,7 +122,6 @@ let allGroups = [];
 document.addEventListener('DOMContentLoaded', init);
 
 async function init() {
-  bindSetupEvents();
   const key = await getApiKey();
   if (key) {
     showMainPage();
@@ -279,30 +278,27 @@ toggleKeyVis.addEventListener('click', () => {
   toggleKeyVis.textContent = apiKeyInput.type === 'password' ? '👁️' : '🙈';
 });
 
-// 测试并保存按钮——移到 init 之后确保 DOM 就绪
-function bindSetupEvents() {
-  if (!testKeyBtn) return;
-  testKeyBtn.addEventListener('click', async () => {
-    const key = apiKeyInput.value.trim();
-    if (!key) { showMessage(setupMsg, '请输入 API Key', 'error'); return; }
+// 测试并保存——通过 window 全局函数暴露给 HTML onclick
+window._testKey = async () => {
+  const key = apiKeyInput.value.trim();
+  if (!key) { showMessage(setupMsg, '请输入 API Key', 'error'); return; }
 
-    testKeyBtn.disabled = true;
-    testKeyBtn.textContent = '⏳ 正在测试...';
-    showMessage(setupMsg, '', '');
+  testKeyBtn.disabled = true;
+  testKeyBtn.textContent = '⏳ 正在测试...';
+  showMessage(setupMsg, '', '');
 
-    try {
-      await testApiKey(key);
-      await setApiKey(key);
-      showMessage(setupMsg, '✅ API Key 验证成功！', 'success');
-      setTimeout(() => { showMainPage(); loadGroups(); apiKeyInput.value = ''; }, 800);
-    } catch (e) {
-      showMessage(setupMsg, '❌ ' + (e.message || '验证失败'), 'error');
-    } finally {
-      testKeyBtn.disabled = false;
-      testKeyBtn.textContent = '🧪 测试并保存';
-    }
-  });
-}
+  try {
+    await testApiKey(key);
+    await setApiKey(key);
+    showMessage(setupMsg, '✅ API Key 验证成功！', 'success');
+    setTimeout(() => { showMainPage(); loadGroups(); apiKeyInput.value = ''; }, 800);
+  } catch (e) {
+    showMessage(setupMsg, '❌ ' + (e.message || '验证失败'), 'error');
+  } finally {
+    testKeyBtn.disabled = false;
+    testKeyBtn.textContent = '🧪 测试并保存';
+  }
+};
 
 // ==================== 地点组列表 ====================
 async function loadGroups() {
