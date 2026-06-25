@@ -12,6 +12,7 @@ import {
   getShiftCalendar, setShiftDate, getTodayShiftType,
   addHistoryRecord, getHistoryRecords, getHistoryInRange,
   getHistoryLimit, setHistoryLimit,
+  getWeatherCity, setWeatherCity,
 } from '../lib/storage.js';
 import { getCommuteTime, testApiKey, getWeatherInfo, getWeatherIcon, geocode, MODE_LABELS, TRAFFIC_LABELS, TRAFFIC_ICONS } from '../lib/amap.js';
 import { getDateInfo } from '../lib/calendar.js';
@@ -90,6 +91,11 @@ const nightStartTime = $('#nightStartTime');
 const nightEndTime   = $('#nightEndTime');
 const saveShiftTimesBtn = $('#saveShiftTimesBtn');
 
+// v2.5: 天气城市
+const weatherCityInput  = $('#weatherCityInput');
+const weatherCityMsg    = $('#weatherCityMsg');
+const saveWeatherCityBtn = $('#saveWeatherCityBtn');
+
 // v2.3: 日历
 const calendarContainer = $('#calendarContainer');
 let calYear, calMonth; // 当前日历显示的年份/月份
@@ -167,29 +173,15 @@ async function refreshWeather() {
       return;
     }
 
-    // 获取城市 adcode：优先用上次缓存的，其次取第一个地点组的终点
-    let adcode = '';
-    const lastWeather = await getLastWeather();
-    if (lastWeather && lastWeather.adcode) {
-      adcode = lastWeather.adcode;
-    } else {
-      const groups = await getSortedGroups();
-      if (groups.length > 0) {
-        // 尝试用第一个组的终点做地理编码获取 adcode
-        try {
-          const geo = await geocode(groups[0].destination, apiKey);
-          adcode = geo.adcode;
-        } catch { /* 降级：保留空 adcode */ }
-      }
-    }
-
-    if (!adcode) {
+    // v2.5: 只使用手动设置的城市
+    const city = await getWeatherCity();
+    if (!city || !city.adcode) {
       weatherBtn.textContent = '☀️';
-      weatherBtn.title = '无法获取城市信息，请先创建地点组';
+      weatherBtn.title = '请先在设置中设置所在城市';
       return;
     }
 
-    const weather = await getWeatherInfo(adcode, apiKey);
+    const weather = await getWeatherInfo(city.adcode, apiKey);
     if (!weather) {
       weatherBtn.textContent = '☀️';
       weatherBtn.title = '天气查询失败，点击重试';
@@ -202,7 +194,7 @@ async function refreshWeather() {
 
     await saveLastWeather({
       city: weather.city,
-      adcode,
+      adcode: city.adcode,
       weather: weather.weather,
       temperature: weather.temperature,
       icon,
@@ -210,7 +202,6 @@ async function refreshWeather() {
       updateTime: Date.now(),
     });
   } catch (e) {
-    console.warn('[通勤助手] 天气查询失败:', e.message);
     weatherBtn.textContent = '☀️';
     weatherBtn.title = '天气查询失败，点击重试';
   } finally {
@@ -776,6 +767,10 @@ settingsBtn.addEventListener('click', async () => {
   dayEndTime.value = settings.dayShiftEnd || '17:00';
   nightStartTime.value = settings.nightShiftStart || '20:00';
   nightEndTime.value = settings.nightShiftEnd || '08:00';
+  // v2.5: 加载天气城市
+  const city = await getWeatherCity();
+  weatherCityInput.value = city ? city.name : '';
+  weatherCityMsg.classList.add('hidden');
   settingsModal.classList.remove('hidden');
   // v2.3: 渲染日历
   const now = new Date();
@@ -838,6 +833,27 @@ saveShiftTimesBtn.addEventListener('click', async () => {
     saveShiftTimesBtn.classList.remove('btn-primary');
     saveShiftTimesBtn.classList.add('btn-secondary');
   }, 1500);
+});
+
+// v2.5: 保存天气城市
+saveWeatherCityBtn.addEventListener('click', async () => {
+  const name = weatherCityInput.value.trim();
+  if (!name) { showMessage(weatherCityMsg, '请输入城市名称', 'error'); return; }
+  saveWeatherCityBtn.disabled = true;
+  saveWeatherCityBtn.textContent = '⏳ 定位中...';
+  try {
+    const apiKey = await getApiKey();
+    if (!apiKey) { showMessage(weatherCityMsg, '请先配置 API Key', 'error'); return; }
+    const geo = await geocode(name, apiKey);
+    await setWeatherCity({ name: geo.name, adcode: geo.adcode });
+    showMessage(weatherCityMsg, `✅ 已保存：${geo.name}`, 'success');
+    await refreshWeather();
+  } catch (e) {
+    showMessage(weatherCityMsg, '❌ 定位失败，请检查城市名称', 'error');
+  } finally {
+    saveWeatherCityBtn.disabled = false;
+    saveWeatherCityBtn.textContent = '💾 保存城市';
+  }
 });
 
 // v2.5: 反馈按钮 → 跳转 GitHub Issues

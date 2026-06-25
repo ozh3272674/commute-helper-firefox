@@ -5,7 +5,7 @@
 
 import {
   getApiKey, getGroupsWithEnabledSlots, updateGroupResult,
-  saveLastWeather,
+  saveLastWeather, getWeatherCity,
 } from '../lib/storage.js';
 import { getCommuteTime, getWeatherInfo, getWeatherIcon, TRAFFIC_LABELS, TRAFFIC_ICONS } from '../lib/amap.js';
 import { isTodayWorkday, getDateInfo } from '../lib/calendar.js';
@@ -152,14 +152,15 @@ async function runScheduledQuery(alarmName) {
       });
     }
 
-    // v2.1: 天气检查（使用终点城市 adcode）
-    if (result.destCoord && result.destCoord.adcode) {
-      const weather = await getWeatherInfo(result.destCoord.adcode, apiKey);
+    // v2.5: 天气检查（使用手动设置的城市）
+    const city = await getWeatherCity();
+    if (city && city.adcode) {
+      const weather = await getWeatherInfo(city.adcode, apiKey);
       if (weather) {
         const wIcon = getWeatherIcon(weather.weather);
         await saveLastWeather({
           city: weather.city,
-          adcode: result.destCoord.adcode,
+          adcode: city.adcode,
           weather: weather.weather,
           temperature: weather.temperature,
           icon: wIcon,
