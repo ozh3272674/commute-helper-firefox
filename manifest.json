@@ -12,14 +12,6 @@
     }
   },
 
-  "data_collection_permissions": {
-    "usage_data": false,
-    "technical_data": false,
-    "interaction_data": false,
-    "personalization_data": false,
-    "financial_data": false
-  },
-
   "permissions": [
     "storage",
     "alarms",
