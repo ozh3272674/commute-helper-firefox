@@ -9,7 +9,7 @@
     "gecko": {
       "id": "commute-helper@ozh3272674",
       "strict_min_version": "140.0",
-      "data_collection_permissions": { "required": [] }
+      "data_collection_permissions": { "required": ["usage_data"] }
     }
   },
 
