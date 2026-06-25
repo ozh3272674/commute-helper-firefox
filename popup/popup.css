@@ -498,17 +498,12 @@ header h2 { font-size: 17px; font-weight: 700; color: var(--text); }
 .compare-duration { font-size: 22px; font-weight: 700; color: var(--accent); }
 .compare-dist { color: var(--text2); font-size: 12px; }
 
-/* ==================== v2.5 路线图 ==================== */
+/* ==================== v2.5 交互地图 ==================== */
 .result-map-container {
-  margin: 8px 0; border-radius: var(--radius-sm); overflow: hidden;
+  margin: 6px 0; border-radius: var(--radius-sm); overflow: hidden;
   border: 1px solid var(--divider);
 }
-.result-map {
-  display: block; width: 100%; height: auto;
+.map-marker {
+  background: none !important; border: none !important;
+  font-size: 18px; text-align: center; line-height: 20px;
 }
-.result-nav-link {
-  display: block; text-align: center; padding: 8px;
-  color: var(--accent); text-decoration: none; font-size: 13px;
-  font-weight: 500;
-}
-.result-nav-link:hover { text-decoration: underline; }
